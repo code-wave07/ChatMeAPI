@@ -26,16 +26,20 @@ namespace ChatMe.Infrastructure.Extensions
                 .AddEntityFrameworkStores<ChatMeDbContext>()
                 .AddDefaultTokenProviders();
 
-            // 3. REPOSITORIES & UNIT OF WORK (Use Scoped for DB related stuff)
+            // 3. REPOSITORIES
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-            services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
 
-            // 4. SIGNALR (Requires the .csproj fix above)
+            // --- FIX IS HERE ---
+            // We register the non-generic IUnitOfWork to the specific ChatMeDbContext implementation
+            services.AddScoped<IUnitOfWork, UnitOfWork<ChatMeDbContext>>();
+            // -------------------
+
+            // 4. SIGNALR
             services.AddSignalR();
 
-            // 5. DOMAIN SERVICES (We will create these next)
+            // 5. SERVICES
             services.AddTransient<IAuthenticationService, AuthenticationService>();
-            // services.AddTransient<IChatService, ChatService>();
+            services.AddScoped<IChatService, ChatService>(); // ChatService needs Scoped because UnitOfWork is Scoped
         }
     }
 }
