@@ -10,6 +10,7 @@ namespace ChatMe.Models.Entities
         public string? ConversationName { get; set; } // Null for Private chats
         public ConversationType Type { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
 
         // Navigation
         public ICollection<Message> Messages { get; set; }

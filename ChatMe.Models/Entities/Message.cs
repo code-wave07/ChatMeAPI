@@ -23,6 +23,7 @@ namespace ChatMe.Models.Entities
         public MessageType MessageType { get; set; } = MessageType.Text;
         public string? MediaUrl { get; set; }
         public DateTime SentDateTime { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
 
         public bool IsDeletedForEveryone { get; set; } = false;
     }
