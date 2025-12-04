@@ -238,5 +238,94 @@ namespace ChatMe.Infrastructure.Implementations
 
             return responseList;
         }
+
+        // 7. ADD NEW GROUP MEMEBER
+        public async Task AddMemberToGroupAsync(string adminUserId, AddMemberRequest request)
+        {
+            // 1. Get the Group and the Admin's membership status
+            var group = await _unitOfWork.GetRepository<Conversation>()
+                .GetQueryable(c => c.ConversationId == request.ConversationId)
+                .Include(c => c.Members)
+                .FirstOrDefaultAsync();
+
+            if (group == null) throw new Exception("Group not found.");
+            if (group.Type == ConversationType.Private) throw new Exception("Cannot add members to a private chat.");
+
+            // 2. Check if the requester is an Admin
+            var adminMember = group.Members.FirstOrDefault(m => m.UserId == adminUserId);
+            if (adminMember == null || adminMember.Role == GroupRole.Member)
+            {
+                throw new Exception("Only Admins can add new members.");
+            }
+
+            // 3. Check if the new user is already in the group
+            if (group.Members.Any(m => m.UserId == request.NewMemberId))
+            {
+                throw new Exception("User is already in the group.");
+            }
+
+            // 4. Add the new member
+            var newMember = new GroupMember
+            {
+                ConversationId = request.ConversationId,
+                UserId = request.NewMemberId,
+                Role = GroupRole.Member,
+                JoinedDateTime = DateTime.UtcNow // Smart History: They won't see messages before this time
+            };
+
+            await _unitOfWork.GetRepository<GroupMember>().AddAsync(newMember);
+            await _unitOfWork.SaveChangesAsync();
+
+            // Optional: Notify the group via SignalR that someone joined
+            await _hubContext.Clients.Group(request.ConversationId).SendAsync("UserJoined", request.NewMemberId);
+        }
+
+        // 8. REMOVE GROUP MEMBER
+        public async Task RemoveMemberFromGroupAsync(string adminUserId, RemoveMemberRequest request)
+        {
+            // 1. Get Group and Members
+            var group = await _unitOfWork.GetRepository<Conversation>()
+                .GetQueryable(c => c.ConversationId == request.ConversationId)
+                .Include(c => c.Members)
+                .FirstOrDefaultAsync();
+
+            if (group == null) throw new Exception("Group not found.");
+            if (group.Type == ConversationType.Private) throw new Exception("Cannot remove members from a private chat.");
+
+            // 2. Identify the Admin (Requester) and the Victim (Target)
+            var adminMember = group.Members.FirstOrDefault(m => m.UserId == adminUserId && m.LeftDateTime == null);
+            var targetMember = group.Members.FirstOrDefault(m => m.UserId == request.MemberIdToRemove && m.LeftDateTime == null);
+
+            if (adminMember == null) throw new Exception("You are not a member of this group.");
+            if (targetMember == null) throw new Exception("Member not found or already left the group.");
+
+            // 3. Permission Check
+            // Rule: Only Admins or Owners can remove people.
+            if (adminMember.Role == GroupRole.Member)
+            {
+                throw new Exception("Only Admins can remove members.");
+            }
+
+            // Rule: An Admin cannot kick the Owner.
+            if (targetMember.Role == GroupRole.Owner)
+            {
+                throw new Exception("You cannot remove the Group Owner.");
+            }
+
+            // Rule: An Admin cannot kick another Admin (Optional rule, usually only Owners can kick Admins)
+            if (adminMember.Role == GroupRole.Admin && targetMember.Role == GroupRole.Admin)
+            {
+                throw new Exception("Admins cannot remove other Admins. Only the Owner can do that.");
+            }
+
+            // 4. Soft Delete (Set LeftDateTime)
+            targetMember.LeftDateTime = DateTime.UtcNow;
+
+            _unitOfWork.GetRepository<GroupMember>().Update(targetMember);
+            await _unitOfWork.SaveChangesAsync();
+
+            // Optional: Notify the group via SignalR
+            await _hubContext.Clients.Group(request.ConversationId).SendAsync("UserLeft", request.MemberIdToRemove);
+        }
     }
 }

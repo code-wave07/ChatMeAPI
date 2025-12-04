@@ -24,5 +24,11 @@ namespace ChatMe.Infrastructure.Interfaces
 
         // 6. Search for users by Name or Phone Number
         Task<IEnumerable<UserSearchResponse>> SearchUsersAsync(string query);
+
+        // 7. Add a new me,ber to a group chat
+        Task AddMemberToGroupAsync(string adminUserId, AddMemberRequest request);
+
+        // 8. Remove a group Member
+        Task RemoveMemberFromGroupAsync(string adminUserId, RemoveMemberRequest request);
     }
 }

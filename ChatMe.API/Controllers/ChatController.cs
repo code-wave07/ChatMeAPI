@@ -99,5 +99,37 @@ namespace ChatMe.API.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        // 7. ADD GROUP MEMBER
+        [HttpPost("group/add-member")]
+        public async Task<IActionResult> AddMember([FromBody] AddMemberRequest request)
+        {
+            var adminUserId = GetCurrentUserId(); // The person clicking the button
+            try
+            {
+                await _chatService.AddMemberToGroupAsync(adminUserId, request);
+                return Ok(new { Message = "Member added successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // 8. REMOVE GROUP MEMEBER
+        [HttpPost("group/remove-member")]
+        public async Task<IActionResult> RemoveMember([FromBody] RemoveMemberRequest request)
+        {
+            var adminUserId = GetCurrentUserId();
+            try
+            {
+                await _chatService.RemoveMemberFromGroupAsync(adminUserId, request);
+                return Ok(new { Message = "Member removed successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }
