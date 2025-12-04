@@ -1,33 +1,39 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using System;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ChatMe.Infrastructure.Hubs
 {
-    // We can define a strong interface for the client to avoid "magic strings"
-    // Clients will listen for: "ReceiveMessage", "UserJoined", etc.
     public class ChatHub : Hub
     {
-        // 1. Join a specific chat room (Conversation)
+        // 1. Join Chat (Connection enters the Room)
         public async Task JoinChat(string conversationId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, conversationId);
-            // Optional: Notify others
-            // await Clients.Group(conversationId).SendAsync("UserJoined", Context.ConnectionId);
         }
 
-        // 2. Leave a chat room
+        // 2. Leave Chat
         public async Task LeaveChat(string conversationId)
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, conversationId);
         }
 
-        // 3. Send Message (This is usually called by the API, not directly by the client, 
-        //    but we keep it here just in case you want direct socket sending)
+        // 3. Send Message (Usually called by API, but works here too)
         public async Task SendMessage(string conversationId, object messageData)
         {
             await Clients.Group(conversationId).SendAsync("ReceiveMessage", messageData);
+        }
+
+
+        public async Task Typing(string conversationId, string userName)
+        {
+            // 'OthersInGroup' means everyone EXCEPT the sender.
+            // Perfect for 1-on-1 (the other person sees it) AND Groups (everyone else sees it).
+            await Clients.OthersInGroup(conversationId).SendAsync("UserTyping", userName);
+        }
+
+        public async Task StoppedTyping(string conversationId, string userName)
+        {
+            await Clients.OthersInGroup(conversationId).SendAsync("UserStoppedTyping", userName);
         }
     }
 }
