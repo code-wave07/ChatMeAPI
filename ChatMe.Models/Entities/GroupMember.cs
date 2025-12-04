@@ -8,7 +8,7 @@ namespace ChatMe.Models.Entities
     public class GroupMember
     {
         [Key]
-        public string Id { get; set; }
+        public string Id { get; set; } = Guid.NewGuid().ToString();
 
         [ForeignKey("User")]
         public string UserId { get; set; }

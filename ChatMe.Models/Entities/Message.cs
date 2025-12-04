@@ -8,7 +8,7 @@ namespace ChatMe.Models.Entities
     public class Message
     {
         [Key]
-        public string MessageId { get; set; }
+        public string MessageId { get; set; } = Guid.NewGuid().ToString();
 
         [ForeignKey("Conversation")]
         public string ConversationId { get; set; }

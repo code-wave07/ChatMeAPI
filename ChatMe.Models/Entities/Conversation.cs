@@ -6,7 +6,7 @@ namespace ChatMe.Models.Entities
     public class Conversation
     {
         [Key]
-        public string ConversationId { get; set; }
+        public string ConversationId { get; set; } = Guid.NewGuid().ToString();
         public string? ConversationName { get; set; } // Null for Private chats
         public ConversationType Type { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
