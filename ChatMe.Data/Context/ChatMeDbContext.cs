@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualBasic;
+using System.Reflection.Emit;
 
 namespace ChatMe.Data.Context
 {
@@ -19,17 +20,23 @@ namespace ChatMe.Data.Context
         public DbSet<Message> Messages { get; set; }
         public DbSet<GroupMember> GroupMembers { get; set; }
 
-        //protected override void OnModelCreating(ModelBuilder builder)
-        //{
-        //    base.OnModelCreating(builder);
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
 
-        //    // Optional: You can enforce foreign key behaviors here if needed
-        //    // For example, if a Conversation is deleted, delete all Messages:
-        //    builder.Entity<Message>()
-        //        .HasOne(m => m.Conversation)
-        //        .WithMany(c => c.Messages)
-        //        .HasForeignKey(m => m.ConversationId)
-        //        .OnDelete(DeleteBehavior.Cascade);
-        //}
+            builder.Entity<ApplicationUser>(b =>
+            {
+                b.Property(e => e.Id)
+                    .ValueGeneratedOnAdd();
+            });
+
+            // Optional: You can enforce foreign key behaviors here if needed
+            // For example, if a Conversation is deleted, delete all Messages:
+            //builder.Entity<Message>()
+            //    .HasOne(m => m.Conversation)
+            //    .WithMany(c => c.Messages)
+            //    .HasForeignKey(m => m.ConversationId)
+            //    .OnDelete(DeleteBehavior.Cascade);
+        }
     }
 }
