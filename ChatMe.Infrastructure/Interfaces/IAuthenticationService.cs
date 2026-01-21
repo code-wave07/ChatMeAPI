@@ -8,5 +8,6 @@ namespace ChatMe.Infrastructure.Interfaces
     {
         Task<AuthenticationResponse> RegisterUserAsync(RegisterRequest request);
         Task<AuthenticationResponse> LoginUserAsync(LoginRequest request);
+        Task<bool> UpdateUserProfileAsync(string userId, UpdateProfileRequest request);
     }
 }

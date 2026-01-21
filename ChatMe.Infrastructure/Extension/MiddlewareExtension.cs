@@ -40,6 +40,7 @@ namespace ChatMe.Infrastructure.Extensions
             // 5. SERVICES
             services.AddTransient<IAuthenticationService, AuthenticationService>();
             services.AddScoped<IChatService, ChatService>(); // ChatService needs Scoped because UnitOfWork is Scoped
+            services.AddScoped<IFileService, FileService>();
         }
     }
 }

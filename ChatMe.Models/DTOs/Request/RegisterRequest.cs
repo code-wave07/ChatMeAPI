@@ -6,12 +6,12 @@ public class RegisterRequest
 {
     [Required]
     public string FirstName { get; set; }
-    [Required]
-    public string LastName { get; set; }
+    
+    public string? LastName { get; set; }
 
-    [Required]
+    
     [EmailAddress]
-    public string Email { get; set; } // We still keep email for recovery/notifications
+    public string? Email { get; set; } // email for recovery/notifications
 
     [Required]
     [Phone]

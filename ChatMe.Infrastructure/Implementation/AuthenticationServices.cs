@@ -120,5 +120,23 @@ namespace ChatMe.Infrastructure.Implementations
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
+        public async Task<bool> UpdateUserProfileAsync(string userId, UpdateProfileRequest request)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return false;
+
+            user.FirstName = request.FirstName;
+            user.LastName = request.LastName;
+
+            // Only update photo if they actually sent a new one
+            if (!string.IsNullOrEmpty(request.ProfilePhotoUrl))
+            {
+                user.ProfilePhotoUrl = request.ProfilePhotoUrl;
+            }
+
+            var result = await _userManager.UpdateAsync(user);
+            return result.Succeeded;
+        }
     }
 }

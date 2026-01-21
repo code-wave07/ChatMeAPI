@@ -19,6 +19,7 @@ namespace ChatMe.Data.Context
         public DbSet<Conversation> Conversations { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<GroupMember> GroupMembers { get; set; }
+        public DbSet<MessageStatus> MessageStatuses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -30,6 +31,19 @@ namespace ChatMe.Data.Context
                     .ValueGeneratedOnAdd();
             });
 
+            // Keep your existing Conversation -> Message cascade
+            builder.Entity<Message>()
+                .HasOne(m => m.Conversation)
+                .WithMany(c => c.Messages)
+                .HasForeignKey(m => m.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // THE FIX: Stop the Cycle in MessageStatus
+            builder.Entity<MessageStatus>()
+                .HasOne(ms => ms.User)     // The User relationship
+                .WithMany()                // (Assuming User doesn't have a List<MessageStatus>)
+                .HasForeignKey(ms => ms.UserId)
+                .OnDelete(DeleteBehavior.NoAction); // <--- THIS FIXES THE ERROR
             // Optional: You can enforce foreign key behaviors here if needed
             // For example, if a Conversation is deleted, delete all Messages:
             //builder.Entity<Message>()
@@ -40,3 +54,6 @@ namespace ChatMe.Data.Context
         }
     }
 }
+
+//Add-Migration AddedReadReceipts -StartupProject ChatMe.API
+//Update-Database -StartupProject ChatMe.API

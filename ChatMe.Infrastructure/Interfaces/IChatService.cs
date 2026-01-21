@@ -25,10 +25,28 @@ namespace ChatMe.Infrastructure.Interfaces
         // 6. Search for users by Name or Phone Number
         Task<IEnumerable<UserSearchResponse>> SearchUsersAsync(string query);
 
-        // 7. Add a new me,ber to a group chat
+        // 7. Add a new member to a group chat
         Task AddMemberToGroupAsync(string adminUserId, AddMemberRequest request);
 
         // 8. Remove a group Member
         Task RemoveMemberFromGroupAsync(string adminUserId, RemoveMemberRequest request);
+
+        // 9.Demote an Admin
+        Task DemoteAdminToMemberAsync(string ownerUserId, DemoteMemberRequest request);
+
+        // 10. Read receipts
+        Task MarkMessagesAsReadAsync(string userId, string conversationId);
+
+        // 11. Promote to Admin
+        Task PromoteMemberToAdminAsync(string ownerUserId, PromoteMemberRequest request);
+
+        // 12. Leave group
+        Task LeaveGroupAsync(string userId, string conversationId);
+
+        // 13. Update group info
+        Task UpdateGroupInfoAsync(string adminUserId, string conversationId, string newName);
+
+        // 14. Delete message
+        Task DeleteMessageAsync(string userId, string messageId);
     }
 }
