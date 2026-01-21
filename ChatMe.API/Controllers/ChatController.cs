@@ -1,4 +1,5 @@
-﻿using ChatMe.Infrastructure.Interfaces;
+﻿using ChatMe.Infrastructure.Implementations;
+using ChatMe.Infrastructure.Interfaces;
 using ChatMe.Models.DTOs.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,10 +13,12 @@ namespace ChatMe.API.Controllers
     public class ChatController : ControllerBase
     {
         private readonly IChatService _chatService;
+        private readonly IFileService _fileService;
 
-        public ChatController(IChatService chatService)
+        public ChatController(IChatService chatService, IFileService fileService)
         {
             _chatService = chatService;
+            _fileService = fileService;
         }
 
         // Helper to get the ID from the Token (Safety First!)
@@ -130,6 +133,96 @@ namespace ChatMe.API.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        // 9. Demote Admin
+        [HttpPost("group/demote")]
+        public async Task<IActionResult> DemoteAdmin([FromBody] DemoteMemberRequest request)
+        {
+            try
+            {
+                await _chatService.DemoteAdminToMemberAsync(GetCurrentUserId(), request);
+                return Ok(new { Message = "Admin demoted to Member successfully." });
+            }
+            catch (Exception ex) { return BadRequest(ex.Message); }
+        }
+
+        // 10. Upload image
+
+        [HttpPost("upload-image")]
+        public async Task<IActionResult> UploadImage(IFormFile file)
+        {
+            if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+            try
+            {
+                var imageUrl = await _fileService.SaveImageAsync(file);
+                // The frontend will take this URL and put it into 'SendMessageRequest.MediaUrl'
+                return Ok(new { Url = imageUrl });
+            }
+            catch (Exception ex) { return BadRequest(ex.Message); }
+        }
+
+        [HttpPost("mark-read/{conversationId}")]
+        public async Task<IActionResult> MarkRead(string conversationId)
+        {
+            await _chatService.MarkMessagesAsReadAsync(GetCurrentUserId(), conversationId);
+            return Ok();
+        }
+
+        // 11. Promote to Admin
+
+        [HttpPost("group/promote")]
+        public async Task<IActionResult> PromoteToAdmin([FromBody] PromoteMemberRequest request)
+        {
+            try
+            {
+                await _chatService.PromoteMemberToAdminAsync(GetCurrentUserId(), request);
+                return Ok(new { Message = "Member promoted to Admin successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // 12. LEAVE GROUP
+        [HttpPost("group/leave/{conversationId}")]
+        public async Task<IActionResult> LeaveGroup(string conversationId)
+        {
+            // Helper method we defined earlier to get ID from token
+            var userId = GetCurrentUserId();
+            try
+            {
+                await _chatService.LeaveGroupAsync(userId, conversationId);
+                return Ok(new { Message = "You have left the group." });
+            }
+            catch (Exception ex) { return BadRequest(ex.Message); }
+        }
+
+        // 13. RENAME GROUP
+        [HttpPut("group/update/{conversationId}")]
+        public async Task<IActionResult> UpdateGroup(string conversationId, [FromQuery] string newName)
+        {
+            var userId = GetCurrentUserId();
+            try
+            {
+                await _chatService.UpdateGroupInfoAsync(userId, conversationId, newName);
+                return Ok(new { Message = "Group updated successfully." });
+            }
+            catch (Exception ex) { return BadRequest(ex.Message); }
+        }
+
+        // 14. DELETE MESSAGE
+        [HttpDelete("message/{messageId}")]
+        public async Task<IActionResult> DeleteMessage(string messageId)
+        {
+            var userId = GetCurrentUserId();
+            try
+            {
+                await _chatService.DeleteMessageAsync(userId, messageId);
+                return Ok(new { Message = "Message deleted." });
+            }
+            catch (Exception ex) { return BadRequest(ex.Message); }
         }
     }
 }

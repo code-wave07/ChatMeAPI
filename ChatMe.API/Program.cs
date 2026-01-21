@@ -121,10 +121,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowAll"); // Must be before Auth
+app.UseCors("AllowAll"); 
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseStaticFiles(); // <--- Allows access to wwwroot folder
 
 app.MapControllers();
 
