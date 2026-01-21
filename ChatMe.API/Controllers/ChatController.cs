@@ -39,10 +39,14 @@ namespace ChatMe.API.Controllers
 
         // 2. SEARCH USERS
         [HttpGet("search")]
-        public async Task<IActionResult> Search([FromQuery] string query)
+        public async Task<IActionResult> SearchUsers(
+        [FromQuery] string query,
+        [FromQuery] string? cursor = null,
+        [FromQuery] int pageSize = 20)
         {
-            var users = await _chatService.SearchUsersAsync(query);
-            return Ok(users);
+            var result = await _chatService.SearchUsersAsync(query, cursor, pageSize);
+
+            return Ok(result);
         }
 
         // 3. CREATE PRIVATE CHAT

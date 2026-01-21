@@ -9,8 +9,4 @@ public class ApplicationUser : IdentityUser<string>
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string? ProfilePhotoUrl { get; set; }
-
-    // Navigation Properties
-    public ICollection<GroupMember> GroupMemberships { get; set; }
-    public ICollection<Message> SentMessages { get; set; }
 }

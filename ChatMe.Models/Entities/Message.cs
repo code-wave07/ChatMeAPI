@@ -7,15 +7,12 @@ namespace ChatMe.Models.Entities
 {
     public class Message
     {
-        [Key]
         public string MessageId { get; set; } = Guid.NewGuid().ToString();
 
-        [ForeignKey("Conversation")]
         public string ConversationId { get; set; }
         public Conversation Conversation { get; set; }
 
         // UPDATE: Identity uses String (Guid) IDs
-        [ForeignKey("Sender")]
         public string SenderId { get; set; }
         public ApplicationUser Sender { get; set; }
 

@@ -5,16 +5,13 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ChatMe.Models.Entities
 {
-    public class GroupMember
+    public class ConversationMember
     {
-        [Key]
         public string Id { get; set; } = Guid.NewGuid().ToString();
 
-        [ForeignKey("User")]
         public string UserId { get; set; }
         public ApplicationUser User { get; set; }
 
-        [ForeignKey("Conversation")]
         public string ConversationId { get; set; }
         public Conversation Conversation { get; set; }
 

@@ -5,7 +5,6 @@ namespace ChatMe.Models.Entities
 {
     public class Conversation
     {
-        [Key]
         public string ConversationId { get; set; } = Guid.NewGuid().ToString();
         public string? ConversationName { get; set; } 
         public ConversationType Type { get; set; }
@@ -14,6 +13,6 @@ namespace ChatMe.Models.Entities
 
         // Navigation
         public ICollection<Message> Messages { get; set; }
-        public ICollection<GroupMember> Members { get; set; }
+        public ICollection<ConversationMember> Members { get; set; }
     }
 }

@@ -18,7 +18,7 @@ namespace ChatMe.Data.Context
 
         public DbSet<Conversation> Conversations { get; set; }
         public DbSet<Message> Messages { get; set; }
-        public DbSet<GroupMember> GroupMembers { get; set; }
+        public DbSet<ConversationMember> ConversationMembers { get; set; }
         public DbSet<MessageStatus> MessageStatuses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)

@@ -26,12 +26,30 @@ namespace ChatMe.Infrastructure.Implementations
         }
 
         // 1. SEARCH USERS
-        public async Task<IEnumerable<UserSearchResponse>> SearchUsersAsync(string query)
+        public async Task<PagedResult<UserSearchResponse>> SearchUsersAsync(string query, string? cursor, int pageSize)
         {
-            var allUsers = await _unitOfWork.GetDbContext().Set<ApplicationUser>()
-                .Where(u => u.PhoneNumber.Contains(query) ||
-                            u.FirstName.Contains(query) ||
-                            u.LastName.Contains(query))
+            if (pageSize < 1)
+                pageSize = 20;
+
+            var dbSet = _unitOfWork.GetDbContext()
+                .Set<ApplicationUser>()
+                .Where(u =>
+                    u.PhoneNumber.Contains(query) ||
+                    u.FirstName.Contains(query) ||
+                    u.LastName.Contains(query));
+
+            // Assuming cursor is string? (nullable string)
+            if (cursor is not null and not "")
+            {
+                dbSet = dbSet.Where(u => string.Compare(u.Id, cursor) > 0);
+            }
+
+
+            var items = await dbSet
+                .OrderBy(u => u.FirstName)
+                .ThenBy(u => u.LastName)
+                .ThenBy(u => u.Id) // REQUIRED for cursor stability
+                .Take(pageSize)
                 .Select(u => new UserSearchResponse
                 {
                     UserId = u.Id,
@@ -40,11 +58,18 @@ namespace ChatMe.Infrastructure.Implementations
                     PhoneNumber = u.PhoneNumber,
                     ProfilePhotoUrl = u.ProfilePhotoUrl
                 })
-                .Take(20)
                 .ToListAsync();
 
-            return allUsers;
+            var nextCursor = items.LastOrDefault()?.UserId;
+
+            return new PagedResult<UserSearchResponse>
+            {
+                Items = items,
+                PageSize = pageSize,
+                NextCursor = nextCursor
+            };
         }
+
 
         // 2. CREATE PRIVATE CHAT
         public async Task<string> CreatePrivateChatAsync(string userId, string targetUserId)
@@ -72,13 +97,13 @@ namespace ChatMe.Infrastructure.Implementations
             await _unitOfWork.GetRepository<Conversation>().AddAsync(newChat);
             await _unitOfWork.SaveChangesAsync();
 
-            var members = new List<GroupMember>
+            var members = new List<ConversationMember>
             {
-                new GroupMember { ConversationId = newChat.ConversationId, UserId = userId, Role = GroupRole.Owner },
-                new GroupMember { ConversationId = newChat.ConversationId, UserId = targetUserId, Role = GroupRole.Member }
+                new ConversationMember { ConversationId = newChat.ConversationId, UserId = userId, Role = GroupRole.Owner },
+                new ConversationMember { ConversationId = newChat.ConversationId, UserId = targetUserId, Role = GroupRole.Member }
             };
 
-            await _unitOfWork.GetRepository<GroupMember>().AddRangeAsync(members);
+            await _unitOfWork.GetRepository<ConversationMember>().AddRangeAsync(members);
             await _unitOfWork.SaveChangesAsync();
 
             return newChat.ConversationId;
@@ -96,14 +121,14 @@ namespace ChatMe.Infrastructure.Implementations
             await _unitOfWork.GetRepository<Conversation>().AddAsync(newGroup);
             await _unitOfWork.SaveChangesAsync();
 
-            var members = new List<GroupMember>
+            var members = new List<ConversationMember>
             {
-                new GroupMember { ConversationId = newGroup.ConversationId, UserId = adminUserId, Role = GroupRole.Admin }
+                new ConversationMember { ConversationId = newGroup.ConversationId, UserId = adminUserId, Role = GroupRole.Admin }
             };
 
             foreach (var memberId in request.MemberIds)
             {
-                members.Add(new GroupMember
+                members.Add(new ConversationMember
                 {
                     ConversationId = newGroup.ConversationId,
                     UserId = memberId,
@@ -111,7 +136,7 @@ namespace ChatMe.Infrastructure.Implementations
                 });
             }
 
-            await _unitOfWork.GetRepository<GroupMember>().AddRangeAsync(members);
+            await _unitOfWork.GetRepository<ConversationMember>().AddRangeAsync(members);
             await _unitOfWork.SaveChangesAsync();
 
             return newGroup.ConversationId;
@@ -120,7 +145,7 @@ namespace ChatMe.Infrastructure.Implementations
         // 4. SEND MESSAGE
         public async Task<MessageResponse> SendMessageAsync(SendMessageRequest request, string senderId)
         {
-            bool isMember = await _unitOfWork.GetRepository<GroupMember>()
+            bool isMember = await _unitOfWork.GetRepository<ConversationMember>()
                 .AnyAsync(m => m.ConversationId == request.ConversationId && m.UserId == senderId);
 
             if (!isMember) throw new Exception("You are not a member of this chat.");
@@ -129,7 +154,8 @@ namespace ChatMe.Infrastructure.Implementations
             {
                 ConversationId = request.ConversationId,
                 SenderId = senderId,
-                MessageText = request.Content,
+                MessageText = request.MessageText,
+                MediaUrl = request.MediaUrl,
                 MessageType = request.MessageType,
                 SentDateTime = DateTime.UtcNow
             };
@@ -167,7 +193,7 @@ namespace ChatMe.Infrastructure.Implementations
         // 5. GET MESSAGES
         public async Task<IEnumerable<MessageResponse>> GetMessagesAsync(string conversationId, string userId)
         {
-            var membership = await _unitOfWork.GetRepository<GroupMember>()
+            var membership = await _unitOfWork.GetRepository<ConversationMember>()
                 .GetSingleByAsync(m => m.ConversationId == conversationId && m.UserId == userId);
 
             if (membership == null) throw new Exception("You are not in this chat.");
@@ -196,7 +222,7 @@ namespace ChatMe.Infrastructure.Implementations
         // 6. GET USER CONVERSATIONS
         public async Task<IEnumerable<ConversationResponse>> GetUserConversationsAsync(string userId)
         {
-            var memberships = await _unitOfWork.GetRepository<GroupMember>()
+            var memberships = await _unitOfWork.GetRepository<ConversationMember>()
                 .GetQueryable(m => m.UserId == userId && m.LeftDateTime == null)
                 .Include(m => m.Conversation)
                 .ThenInclude(c => c.Members)
@@ -265,7 +291,7 @@ namespace ChatMe.Infrastructure.Implementations
             }
 
             // 4. Add the new member
-            var newMember = new GroupMember
+            var newMember = new ConversationMember
             {
                 ConversationId = request.ConversationId,
                 UserId = request.NewMemberId,
@@ -273,7 +299,7 @@ namespace ChatMe.Infrastructure.Implementations
                 JoinedDateTime = DateTime.UtcNow // Smart History: They won't see messages before this time
             };
 
-            await _unitOfWork.GetRepository<GroupMember>().AddAsync(newMember);
+            await _unitOfWork.GetRepository<ConversationMember>().AddAsync(newMember);
             await _unitOfWork.SaveChangesAsync();
 
             // Optional: Notify the group via SignalR that someone joined
@@ -321,7 +347,7 @@ namespace ChatMe.Infrastructure.Implementations
             // 4. Soft Delete (Set LeftDateTime)
             targetMember.LeftDateTime = DateTime.UtcNow;
 
-            _unitOfWork.GetRepository<GroupMember>().Update(targetMember);
+            _unitOfWork.GetRepository<ConversationMember>().Update(targetMember);
             await _unitOfWork.SaveChangesAsync();
 
             // Optional: Notify the group via SignalR
@@ -347,7 +373,7 @@ namespace ChatMe.Infrastructure.Implementations
 
             target.Role = GroupRole.Member;
 
-            _unitOfWork.GetRepository<GroupMember>().Update(target);
+            _unitOfWork.GetRepository<ConversationMember>().Update(target);
             await _unitOfWork.SaveChangesAsync();
         }
 
@@ -430,14 +456,14 @@ namespace ChatMe.Infrastructure.Implementations
             // 4. Update Role
             targetMember.Role = GroupRole.Admin;
 
-            _unitOfWork.GetRepository<GroupMember>().Update(targetMember);
+            _unitOfWork.GetRepository<ConversationMember>().Update(targetMember);
             await _unitOfWork.SaveChangesAsync();
         }
 
         // LEAVE GROUP
         public async Task LeaveGroupAsync(string userId, string conversationId)
         {
-            var membership = await _unitOfWork.GetRepository<GroupMember>()
+            var membership = await _unitOfWork.GetRepository<ConversationMember>()
                 .GetSingleByAsync(m => m.UserId == userId && m.ConversationId == conversationId && m.LeftDateTime == null);
 
             if (membership == null) throw new Exception("You are not in this group.");
@@ -447,7 +473,7 @@ namespace ChatMe.Infrastructure.Implementations
                 throw new Exception("The Owner cannot leave the group. Promote someone else to Owner first (feature coming soon) or delete the group.");
 
             membership.LeftDateTime = DateTime.UtcNow;
-            _unitOfWork.GetRepository<GroupMember>().Update(membership);
+            _unitOfWork.GetRepository<ConversationMember>().Update(membership);
             await _unitOfWork.SaveChangesAsync();
 
             //hub update
@@ -465,7 +491,7 @@ namespace ChatMe.Infrastructure.Implementations
             if (group == null) throw new Exception("Group not found.");
 
             // Check Permissions (Admin/Owner only)
-            var member = await _unitOfWork.GetRepository<GroupMember>()
+            var member = await _unitOfWork.GetRepository<ConversationMember>()
                 .GetSingleByAsync(m => m.UserId == adminUserId && m.ConversationId == conversationId && m.LeftDateTime == null);
 
             if (member == null || member.Role == GroupRole.Member)

@@ -1,6 +1,0 @@
-@ChatMe.API_HostAddress = http://localhost:5003
-
-GET {{ChatMe.API_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

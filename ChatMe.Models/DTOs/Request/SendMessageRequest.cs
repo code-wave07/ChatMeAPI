@@ -8,7 +8,8 @@ namespace ChatMe.Models.DTOs.Requests
         [Required]
         public string ConversationId { get; set; } // Which chat is this for?
 
-        public string Content { get; set; } // Text message
+        public string MessageText { get; set; } // Text message
+        public string? MediaUrl { get; set; } // Optional media URL
 
         public MessageType MessageType { get; set; } = MessageType.Text;
     }
