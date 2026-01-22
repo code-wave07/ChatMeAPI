@@ -18,7 +18,7 @@ namespace ChatMe.Infrastructure.Hubs
         }
 
         // 3. Send Message (Usually called by API, but works here too)
-        public async Task SendMessage(string conversationId, object messageData)
+        public async Task SendMessage(string conversationId, object messageData) 
         {
             await Clients.Group(conversationId).SendAsync("ReceiveMessage", messageData);
         }

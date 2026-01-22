@@ -28,9 +28,9 @@ namespace ChatMe.Infrastructure.Implementations
         // 1. SEARCH USERS
         public async Task<PagedResult<UserSearchResponse>> SearchUsersAsync(string query, string? cursor, int pageSize)
         {
-            if (pageSize < 1)
-                pageSize = 20;
+            if (pageSize < 1) pageSize = 20;
 
+            // 1. Basic Search Filter
             var dbSet = _unitOfWork.GetDbContext()
                 .Set<ApplicationUser>()
                 .Where(u =>
@@ -38,17 +38,43 @@ namespace ChatMe.Infrastructure.Implementations
                     u.FirstName.Contains(query) ||
                     u.LastName.Contains(query));
 
-            // Assuming cursor is string? (nullable string)
-            if (cursor is not null and not "")
+            // 2. CURSOR LOGIC (Composite Cursor)
+            // If we have a cursor, we need to decode it to find out where we stopped.
+            // Format: "FirstName|LastName|Id" (Base64 Encoded)
+            if (!string.IsNullOrEmpty(cursor))
             {
-                dbSet = dbSet.Where(u => string.Compare(u.Id, cursor) > 0);
+                try
+                {
+                    var decodedBytes = Convert.FromBase64String(cursor);
+                    var decodedString = System.Text.Encoding.UTF8.GetString(decodedBytes);
+                    var parts = decodedString.Split('|');
+
+                    if (parts.Length == 3)
+                    {
+                        var lastFirst = parts[0];
+                        var lastLast = parts[1];
+                        var lastId = parts[2];
+
+                        // The Magic Logic: "Greater than (Name, Name, Id)"
+                        dbSet = dbSet.Where(u =>
+                            u.FirstName.CompareTo(lastFirst) > 0 ||
+                            (u.FirstName == lastFirst && u.LastName.CompareTo(lastLast) > 0) ||
+                            (u.FirstName == lastFirst && u.LastName == lastLast && u.Id.CompareTo(lastId) > 0)
+                        );
+                    }
+                }
+                catch
+                {
+                    // If cursor is bad, just ignore it and start from beginning
+                }
             }
 
-
+            // 3. SORTING (Must be deterministic)
+            // We sort by First Name, then Last Name, then ID (to break ties)
             var items = await dbSet
                 .OrderBy(u => u.FirstName)
                 .ThenBy(u => u.LastName)
-                .ThenBy(u => u.Id) // REQUIRED for cursor stability
+                .ThenBy(u => u.Id)
                 .Take(pageSize)
                 .Select(u => new UserSearchResponse
                 {
@@ -60,7 +86,17 @@ namespace ChatMe.Infrastructure.Implementations
                 })
                 .ToListAsync();
 
-            var nextCursor = items.LastOrDefault()?.UserId;
+            // 4. GENERATE NEXT CURSOR
+            string? nextCursor = null;
+            var lastItem = items.LastOrDefault();
+
+            if (lastItem != null)
+            {
+                // Encode the position into a safe string
+                var rawCursor = $"{lastItem.FirstName}|{lastItem.LastName}|{lastItem.UserId}";
+                var bytes = System.Text.Encoding.UTF8.GetBytes(rawCursor);
+                nextCursor = Convert.ToBase64String(bytes);
+            }
 
             return new PagedResult<UserSearchResponse>
             {
@@ -69,6 +105,7 @@ namespace ChatMe.Infrastructure.Implementations
                 NextCursor = nextCursor
             };
         }
+        
 
 
         // 2. CREATE PRIVATE CHAT
