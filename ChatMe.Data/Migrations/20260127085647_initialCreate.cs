@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ChatMe.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class initialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -175,7 +175,7 @@ namespace ChatMe.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "GroupMembers",
+                name: "ConversationMembers",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
@@ -187,15 +187,15 @@ namespace ChatMe.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_GroupMembers", x => x.Id);
+                    table.PrimaryKey("PK_ConversationMembers", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_GroupMembers_AspNetUsers_UserId",
+                        name: "FK_ConversationMembers_AspNetUsers_UserId",
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_GroupMembers_Conversations_ConversationId",
+                        name: "FK_ConversationMembers_Conversations_ConversationId",
                         column: x => x.ConversationId,
                         principalTable: "Conversations",
                         principalColumn: "ConversationId",
@@ -230,6 +230,31 @@ namespace ChatMe.Data.Migrations
                         column: x => x.ConversationId,
                         principalTable: "Conversations",
                         principalColumn: "ConversationId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MessageStatuses",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    MessageId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ReadAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MessageStatuses", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MessageStatuses_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MessageStatuses_Messages_MessageId",
+                        column: x => x.MessageId,
+                        principalTable: "Messages",
+                        principalColumn: "MessageId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -273,13 +298,13 @@ namespace ChatMe.Data.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_GroupMembers_ConversationId",
-                table: "GroupMembers",
+                name: "IX_ConversationMembers_ConversationId",
+                table: "ConversationMembers",
                 column: "ConversationId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_GroupMembers_UserId",
-                table: "GroupMembers",
+                name: "IX_ConversationMembers_UserId",
+                table: "ConversationMembers",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
@@ -291,6 +316,16 @@ namespace ChatMe.Data.Migrations
                 name: "IX_Messages_SenderId",
                 table: "Messages",
                 column: "SenderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MessageStatuses_MessageId",
+                table: "MessageStatuses",
+                column: "MessageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MessageStatuses_UserId",
+                table: "MessageStatuses",
+                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -312,13 +347,16 @@ namespace ChatMe.Data.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "GroupMembers");
+                name: "ConversationMembers");
 
             migrationBuilder.DropTable(
-                name: "Messages");
+                name: "MessageStatuses");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
+
+            migrationBuilder.DropTable(
+                name: "Messages");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");

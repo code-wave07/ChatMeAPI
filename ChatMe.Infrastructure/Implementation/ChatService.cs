@@ -105,7 +105,7 @@ namespace ChatMe.Infrastructure.Implementations
                 NextCursor = nextCursor
             };
         }
-        
+
 
 
         // 2. CREATE PRIVATE CHAT

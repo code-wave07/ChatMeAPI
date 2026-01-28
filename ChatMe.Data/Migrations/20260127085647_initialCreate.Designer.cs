@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ChatMe.Data.Migrations
 {
     [DbContext(typeof(ChatMeDbContext))]
-    [Migration("20251210133909_AddedReadReceipts")]
-    partial class AddedReadReceipts
+    [Migration("20260127085647_initialCreate")]
+    partial class initialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -216,7 +216,7 @@ namespace ChatMe.Data.Migrations
                     b.ToTable("Conversations");
                 });
 
-            modelBuilder.Entity("ChatMe.Models.Entities.GroupMember", b =>
+            modelBuilder.Entity("ChatMe.Models.Entities.ConversationMember", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -244,7 +244,7 @@ namespace ChatMe.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("GroupMembers");
+                    b.ToTable("ConversationMembers");
                 });
 
             modelBuilder.Entity("ChatMe.Models.Entities.Message", b =>
@@ -386,7 +386,7 @@ namespace ChatMe.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ChatMe.Models.Entities.GroupMember", b =>
+            modelBuilder.Entity("ChatMe.Models.Entities.ConversationMember", b =>
                 {
                     b.HasOne("ChatMe.Models.Entities.Conversation", "Conversation")
                         .WithMany("Members")
@@ -395,7 +395,7 @@ namespace ChatMe.Data.Migrations
                         .IsRequired();
 
                     b.HasOne("ChatMe.Models.Entities.ApplicationUser", "User")
-                        .WithMany("GroupMemberships")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -414,7 +414,7 @@ namespace ChatMe.Data.Migrations
                         .IsRequired();
 
                     b.HasOne("ChatMe.Models.Entities.ApplicationUser", "Sender")
-                        .WithMany("SentMessages")
+                        .WithMany()
                         .HasForeignKey("SenderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -459,13 +459,6 @@ namespace ChatMe.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("ChatMe.Models.Entities.ApplicationUser", b =>
-                {
-                    b.Navigation("GroupMemberships");
-
-                    b.Navigation("SentMessages");
                 });
 
             modelBuilder.Entity("ChatMe.Models.Entities.Conversation", b =>

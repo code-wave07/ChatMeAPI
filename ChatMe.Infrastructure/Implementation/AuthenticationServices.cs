@@ -59,7 +59,12 @@ namespace ChatMe.Infrastructure.Implementations
                 return new AuthenticationResponse { Success = false, Message = errors };
             }
 
-            return new AuthenticationResponse { Success = true, Message = "User created successfully!" };
+            return new AuthenticationResponse { 
+                Success = true, 
+                Message = "User created successfully!",
+                UserId = user.Id,
+                FirstName = user.FirstName
+            };
         }
 
         public async Task<AuthenticationResponse> LoginUserAsync(LoginRequest request)
