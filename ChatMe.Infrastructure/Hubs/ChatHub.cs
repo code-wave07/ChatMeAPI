@@ -28,12 +28,12 @@ namespace ChatMe.Infrastructure.Hubs
         {
             // 'OthersInGroup' means everyone EXCEPT the sender.
             // Perfect for 1-on-1 (the other person sees it) AND Groups (everyone else sees it).
-            await Clients.OthersInGroup(conversationId).SendAsync("UserTyping", userName);
+            await Clients.OthersInGroup(conversationId).SendAsync("UserTyping", conversationId, userName);
         }
 
         public async Task StoppedTyping(string conversationId, string userName)
         {
-            await Clients.OthersInGroup(conversationId).SendAsync("UserStoppedTyping", userName);
+            await Clients.OthersInGroup(conversationId).SendAsync("UserTyping", conversationId, userName);
         }
     }
 }
