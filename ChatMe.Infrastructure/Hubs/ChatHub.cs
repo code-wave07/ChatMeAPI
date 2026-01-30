@@ -33,7 +33,7 @@ namespace ChatMe.Infrastructure.Hubs
 
         public async Task StoppedTyping(string conversationId, string userName)
         {
-            await Clients.OthersInGroup(conversationId).SendAsync("UserTyping", conversationId, userName);
+            await Clients.OthersInGroup(conversationId).SendAsync("UserStoppedTyping", conversationId, userName);
         }
     }
 }
